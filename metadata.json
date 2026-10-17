@@ -1,0 +1,8 @@
+{
+  "name": "Route X Limousine",
+  "description": "خدمة ليموزين فاخرة في الإسكندرية وجميع مطارات ومحافظات مصر مع تصميم زجاجي راقٍ وحاسبة أسعار ذكية وحجز فوري عبر واتساب.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
