@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  schedule:
+    # Every day at 02:15 UTC: refresh the USD/EGP rate and redeploy
+    - cron: "15 2 * * *"
 
 permissions:
   contents: read
@@ -21,6 +24,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
+      - name: Update USD/EGP exchange rate
+        run: node scripts/update-rate.mjs
       - run: bun run build
       - uses: actions/upload-pages-artifact@v3
         with:

@@ -9,12 +9,15 @@ import type { Language } from "./translations";
 import { POPULAR_ROUTES, initialAppState } from "./limousineData";
 import type { Car, RoutePreset } from "./limousineData";
 
-/**
- * Exchange rate used to show prices in US dollars on the English / Chinese / Russian pages.
- * 1 USD = EGP_PER_USD Egyptian pounds. Update this single number when the rate moves.
- * (Last set from the mid-market rate of about 53.97 EGP per USD, rounded.)
- */
-export const EGP_PER_USD = 54;
+import { EGP_PER_USD } from "./exchangeRate";
+
+// Prices on the English / Chinese / Russian pages are shown in US dollars using EGP_PER_USD
+// (1 USD = EGP_PER_USD Egyptian pounds). The rate lives in ./exchangeRate.ts, which is rewritten
+// every day by scripts/update-rate.mjs in the deploy workflow.
+export { EGP_PER_USD };
+
+/** The rate as shown to visitors, e.g. 53.97 */
+const RATE_TEXT = String(+EGP_PER_USD.toFixed(2));
 
 type Foreign = Exclude<Language, "ar">;
 
@@ -344,9 +347,9 @@ export const PER_KM_UNIT_USD: Record<Foreign, string> = {
 };
 
 const BILLED_IN_EGP: Record<Foreign, (egp: string) => string> = {
-  en: (egp) => `Billed in EGP: ${egp} EGP (1 USD ≈ ${EGP_PER_USD} EGP)`,
-  zh: (egp) => `以埃镑结算：${egp} EGP（1 美元 ≈ ${EGP_PER_USD} EGP）`,
-  ru: (egp) => `Оплата в египетских фунтах: ${egp} EGP (1 USD ≈ ${EGP_PER_USD} EGP)`
+  en: (egp) => `Billed in EGP: ${egp} EGP (1 USD ≈ ${RATE_TEXT} EGP)`,
+  zh: (egp) => `以埃镑结算：${egp} EGP（1 美元 ≈ ${RATE_TEXT} EGP）`,
+  ru: (egp) => `Оплата в египетских фунтах: ${egp} EGP (1 USD ≈ ${RATE_TEXT} EGP)`
 };
 
 export function billedInEgpNote(egp: number, lang: Language): string {
