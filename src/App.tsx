@@ -56,8 +56,40 @@ import {
 } from "./data/limousineData";
 import { TRANSLATIONS, Language, TranslationDict } from "./data/translations";
 import { IMAGES } from "./data/images";
+import { Limousine3DShowcase } from "./components/Limousine3DShowcase";
 
 // Helper to guarantee numbers are always in English (Western Latin) digits: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
+// Mounts its children only once the section scrolls near the viewport,
+// so the WebGL scene is not created (and does not drain battery) for nothing.
+function MountWhenVisible({ children, minHeight = 520 }: { children: React.ReactNode; minHeight?: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (typeof IntersectionObserver === "undefined") {
+      setVisible(true);
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setVisible(true);
+          io.disconnect();
+        }
+      },
+      { rootMargin: "300px" }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  return (
+    <div ref={ref} style={{ minHeight: visible ? undefined : minHeight }}>
+      {visible ? children : null}
+    </div>
+  );
+}
+
 function toEnglishDigits(s: string | number): string {
   return String(s == null ? "" : s)
     .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660))
@@ -1267,6 +1299,31 @@ export default function App() {
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* 8b. INTERACTIVE 3D LIMOUSINE STUDIO */}
+      <section id="studio-3d" className="relative z-10 py-12 sm:py-16 px-4 sm:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-start mb-8">
+            <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 tracking-wider uppercase">
+              3D STUDIO
+            </span>
+            <h2
+              className="text-2xl sm:text-3xl font-bold mt-1 font-['Cairo']"
+              style={{ color: "var(--fg-heading)" }}
+            >
+              {lang === "ar" ? "استعرض الليموزين بزاوية 360°" : "Explore the Limousine in 360°"}
+            </h2>
+            <p className="text-sm max-w-2xl mt-1.5" style={{ color: "var(--muted)" }}>
+              {lang === "ar"
+                ? "اسحب للدوران، غيّر لون الطلاء، وبدّل زوايا الرؤية."
+                : "Drag to rotate, change the paint colour and switch camera angles."}
+            </p>
+          </div>
+          <MountWhenVisible minHeight={520}>
+            <Limousine3DShowcase lang={lang} />
+          </MountWhenVisible>
         </div>
       </section>
 
