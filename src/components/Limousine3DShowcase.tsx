@@ -23,6 +23,8 @@ interface Limousine3DProps {
 }
 
 export const Limousine3DShowcase: React.FC<Limousine3DProps> = ({ onClose, lang = "ar" }) => {
+  const L = (ar: string, en: string, zh: string, ru: string) =>
+    lang === "ar" ? ar : lang === "zh" ? zh : lang === "ru" ? ru : en;
   const containerRef = useRef<HTMLDivElement>(null);
   const [paintColor, setPaintColor] = useState<string>("#0b0e14"); // Obsidian Black default
   const [lightsOn, setLightsOn] = useState<boolean>(true);
@@ -32,11 +34,11 @@ export const Limousine3DShowcase: React.FC<Limousine3DProps> = ({ onClose, lang 
 
   // Paint Color Swatches
   const colorOptions = [
-    { id: "black", name: lang === "ar" ? "أسود أوبسيديان ملكي" : "Obsidian Black", hex: "#0a0d14", metal: 0.95, rough: 0.12 },
-    { id: "white", name: lang === "ar" ? "أبيض لؤلؤي ماسي" : "Diamond Pearl White", hex: "#f0f4f8", metal: 0.4, rough: 0.18 },
-    { id: "blue", name: lang === "ar" ? "أزرق سفير ملكي" : "Royal Sapphire Blue", hex: "#0f2347", metal: 0.9, rough: 0.15 },
-    { id: "gold", name: lang === "ar" ? "شامبين جولد فخم" : "Champagne Gold", hex: "#c29d53", metal: 0.92, rough: 0.2 },
-    { id: "silver", name: lang === "ar" ? "فضي بلاتيني ناصع" : "Platinum Silver", hex: "#949ba6", metal: 0.98, rough: 0.14 }
+    { id: "black", name: L("أسود أوبسيديان ملكي", "Obsidian Black", "黑曜石黑", "Чёрный обсидиан"), hex: "#0a0d14", metal: 0.95, rough: 0.12 },
+    { id: "white", name: L("أبيض لؤلؤي ماسي", "Diamond Pearl White", "钻石珍珠白", "Алмазный жемчужно-белый"), hex: "#f0f4f8", metal: 0.4, rough: 0.18 },
+    { id: "blue", name: L("أزرق سفير ملكي", "Royal Sapphire Blue", "皇家蓝宝石蓝", "Королевский сапфировый синий"), hex: "#0f2347", metal: 0.9, rough: 0.15 },
+    { id: "gold", name: L("شامبين جولد فخم", "Champagne Gold", "香槟金", "Золото шампань"), hex: "#c29d53", metal: 0.92, rough: 0.2 },
+    { id: "silver", name: L("فضي بلاتيني ناصع", "Platinum Silver", "铂金银", "Платиновое серебро"), hex: "#949ba6", metal: 0.98, rough: 0.14 }
   ];
 
   // Camera presets
@@ -512,10 +514,10 @@ export const Limousine3DShowcase: React.FC<Limousine3DProps> = ({ onClose, lang 
           <Rotate3d className="w-4 h-4 text-amber-400 shrink-0" />
           <div className="text-start">
             <span className="text-xs font-bold text-white block font-['Cairo']">
-              {lang === "ar" ? "استعراض الليموزين التفاعلي 3D" : "Interactive 3D Limousine Studio"}
+              {L("استعراض الليموزين التفاعلي 3D", "Interactive 3D Limousine Studio", "3D 互动豪华轿车展厅", "Интерактивная 3D-студия лимузина")}
             </span>
             <span className="text-[10px] text-slate-300 block">
-              {lang === "ar" ? "اسحب الماوس للدوران 360° واستكشف الفخامة" : "Drag to rotate 360° & inspect details"}
+              {L("اسحب الماوس للدوران 360° واستكشف الفخامة", "Drag to rotate 360° & inspect details", "拖动即可 360° 旋转并查看细节", "Перетащите, чтобы повернуть на 360° и рассмотреть детали")}
             </span>
           </div>
         </div>
@@ -531,7 +533,7 @@ export const Limousine3DShowcase: React.FC<Limousine3DProps> = ({ onClose, lang 
           >
             <Rotate3d className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">
-              {autoRotate ? (lang === "ar" ? "إيقاف الدوران" : "Pause Spin") : (lang === "ar" ? "دوران تلقائي" : "Auto Spin")}
+              {autoRotate ? (L("إيقاف الدوران", "Pause Spin", "暂停旋转", "Остановить вращение")) : (L("دوران تلقائي", "Auto Spin", "自动旋转", "Автовращение"))}
             </span>
           </button>
 
@@ -562,8 +564,8 @@ export const Limousine3DShowcase: React.FC<Limousine3DProps> = ({ onClose, lang 
             {isControlsCollapsed ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
             <span>
               {isControlsCollapsed
-                ? (lang === "ar" ? "إظهار أدوات التخصيص 3D" : "Show 3D Customizer")
-                : (lang === "ar" ? "إخفاء لوحة التحكم" : "Hide Controls")}
+                ? (L("إظهار أدوات التخصيص 3D", "Show 3D Customizer", "显示 3D 定制工具", "Показать настройки 3D"))
+                : (L("إخفاء لوحة التحكم", "Hide Controls", "隐藏控制面板", "Скрыть панель"))}
             </span>
           </button>
         </div>
@@ -574,7 +576,7 @@ export const Limousine3DShowcase: React.FC<Limousine3DProps> = ({ onClose, lang 
             {/* Color Swatches */}
             <div className="flex items-center gap-2">
               <span className="text-xs text-slate-300 font-medium hidden sm:inline">
-                {lang === "ar" ? "لون الطلاء:" : "Exterior Paint:"}
+                {L("لون الطلاء:", "Exterior Paint:", "车身颜色：", "Цвет кузова:")}
               </span>
               <div className="flex items-center gap-1.5">
                 {colorOptions.map((c) => (
@@ -597,7 +599,7 @@ export const Limousine3DShowcase: React.FC<Limousine3DProps> = ({ onClose, lang 
             {/* Camera View Angle Buttons */}
             <div className="flex items-center gap-1.5">
               <span className="text-xs text-slate-300 font-medium hidden md:inline">
-                {lang === "ar" ? "زوايا الرؤية:" : "Camera:"}
+                {L("زوايا الرؤية:", "Camera:", "视角：", "Ракурс:")}
               </span>
               <button
                 type="button"
@@ -606,7 +608,7 @@ export const Limousine3DShowcase: React.FC<Limousine3DProps> = ({ onClose, lang 
                   activeCamPreset === "frontThreeQuarter" ? "text-amber-400 border-amber-400/50" : "text-slate-300"
                 }`}
               >
-                {lang === "ar" ? "أمامي" : "Front 3/4"}
+                {L("أمامي", "Front 3/4", "前侧", "Спереди")}
               </button>
               <button
                 type="button"
@@ -615,7 +617,7 @@ export const Limousine3DShowcase: React.FC<Limousine3DProps> = ({ onClose, lang 
                   activeCamPreset === "side" ? "text-amber-400 border-amber-400/50" : "text-slate-300"
                 }`}
               >
-                {lang === "ar" ? "جانبي" : "Profile"}
+                {L("جانبي", "Profile", "侧面", "Сбоку")}
               </button>
               <button
                 type="button"
@@ -624,7 +626,7 @@ export const Limousine3DShowcase: React.FC<Limousine3DProps> = ({ onClose, lang 
                   activeCamPreset === "rearThreeQuarter" ? "text-amber-400 border-amber-400/50" : "text-slate-300"
                 }`}
               >
-                {lang === "ar" ? "خلفي" : "Rear"}
+                {L("خلفي", "Rear", "后侧", "Сзади")}
               </button>
             </div>
 
@@ -640,8 +642,8 @@ export const Limousine3DShowcase: React.FC<Limousine3DProps> = ({ onClose, lang 
                 <Lightbulb className="w-3.5 h-3.5" />
                 <span>
                   {lightsOn
-                    ? (lang === "ar" ? "إضاءة LED مفعّلة" : "LED Lights ON")
-                    : (lang === "ar" ? "إضاءة LED مطفأة" : "LED Lights OFF")}
+                    ? (L("إضاءة LED مفعّلة", "LED Lights ON", "LED 灯已开启", "LED-свет включён"))
+                    : (L("إضاءة LED مطفأة", "LED Lights OFF", "LED 灯已关闭", "LED-свет выключен"))}
                 </span>
               </button>
             </div>

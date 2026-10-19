@@ -57,6 +57,18 @@ import {
 import { TRANSLATIONS, Language, TranslationDict } from "./data/translations";
 import { IMAGES } from "./data/images";
 import { Limousine3DShowcase } from "./components/Limousine3DShowcase";
+import {
+  localizeRoute,
+  localizeCar,
+  localizeAddress,
+  routeFieldVariants,
+  money,
+  moneyPerKm,
+  egpToUsd,
+  billedInEgpNote,
+  FIXED_PRICE_LABEL,
+  PER_KM_UNIT_USD
+} from "./data/localized";
 
 // Helper to guarantee numbers are always in English (Western Latin) digits: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
 // Mounts its children only once the section scrolls near the viewport,
@@ -308,8 +320,8 @@ export default function App() {
 
   // Sorted cars by capacity
   const sortedCars = useMemo(() => {
-    return [...appState.cars].sort((a, b) => a.maxPax - b.maxPax);
-  }, [appState.cars]);
+    return [...appState.cars].map((c) => localizeCar(c, lang)).sort((a, b) => a.maxPax - b.maxPax);
+  }, [appState.cars, lang]);
 
   const maxPaxInFleet = useMemo(() => {
     return sortedCars.length ? sortedCars[sortedCars.length - 1].maxPax : 14;
@@ -343,18 +355,44 @@ export default function App() {
   }, [paxCount, bagsCount, activeCar, maxPaxInFleet, t]);
 
   // Matching Preset Route
+  const rawRoutes = useMemo(
+    () => (appState.routes && appState.routes.length > 0 ? appState.routes : POPULAR_ROUTES),
+    [appState.routes]
+  );
+  // Same routes with name / from / to / highlight in the selected language
+  const routeList = useMemo(() => rawRoutes.map((r) => localizeRoute(r, lang)), [rawRoutes, lang]);
+
   const matchingPreset = useMemo(() => {
-    const list = appState.routes && appState.routes.length > 0 ? appState.routes : POPULAR_ROUTES;
     if (selectedRoutePresetId) {
-      const found = list.find((r) => r.id === selectedRoutePresetId);
+      const found = rawRoutes.find((r) => r.id === selectedRoutePresetId);
       if (found) return found;
     }
-    return list.find(
-      (r) =>
-        r.from.trim().toLowerCase() === fromLoc.trim().toLowerCase() &&
-        r.to.trim().toLowerCase() === toLoc.trim().toLowerCase()
+    const f = fromLoc.trim().toLowerCase();
+    const to = toLoc.trim().toLowerCase();
+    return rawRoutes.find(
+      (r) => routeFieldVariants(r, "from").includes(f) && routeFieldVariants(r, "to").includes(to)
     );
-  }, [selectedRoutePresetId, appState.routes, fromLoc, toLoc]);
+  }, [selectedRoutePresetId, rawRoutes, fromLoc, toLoc]);
+
+  // When the language changes, translate the pickup / drop-off text if it came from a preset route
+  useEffect(() => {
+    const f = fromLoc.trim().toLowerCase();
+    const to = toLoc.trim().toLowerCase();
+    const route = rawRoutes.find(
+      (r) => routeFieldVariants(r, "from").includes(f) && routeFieldVariants(r, "to").includes(to)
+    );
+    if (route) {
+      const loc = localizeRoute(route, lang);
+      setFromLoc(loc.from);
+      setToLoc(loc.to);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang]);
+
+  // Price helpers: Egyptian pounds in Arabic, US dollars in every other language
+  const perKmText = (egp: number) =>
+    toEnglishDigits(lang === "ar" ? fmtNum(egp) : moneyPerKm(egp, lang));
+  const perKmUnit = lang === "ar" ? t.fleet.currencyPerKm : PER_KM_UNIT_USD[lang];
 
   // Estimated fare
   const estimatedFare = useMemo(() => {
@@ -478,7 +516,11 @@ export default function App() {
     }
 
     if (estimatedFare !== null) {
-      lines.push(`💵 *Estimated Total Fare:* ${toEnglishDigits(estimatedFare)} EGP`);
+      lines.push(
+        `💵 *Estimated Total Fare:* ${toEnglishDigits(estimatedFare)} EGP${
+          lang !== "ar" ? ` (≈ $${Math.max(1, Math.round(egpToUsd(estimatedFare)))} USD)` : ""
+        }`
+      );
     }
 
     lines.push(`📅 *Date & Time:* ${formattedDate} - ${formattedTime}`);
@@ -527,7 +569,8 @@ export default function App() {
     parsedFrom,
     parsedVia,
     parsedTo,
-    appState.settings.whatsapp
+    appState.settings.whatsapp,
+    lang
   ]);
 
   // Apply quick route preset
@@ -953,7 +996,7 @@ export default function App() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-5 sm:gap-6">
-            {(appState.routes && appState.routes.length > 0 ? appState.routes : POPULAR_ROUTES).map((route, idx) => {
+            {routeList.map((route, idx) => {
               const carImg =
                 (route.imageKey && (IMAGES as any)[route.imageKey]) ||
                 (idx === 0
@@ -994,8 +1037,10 @@ export default function App() {
                     </span>
 
                     <div className="px-3.5 py-1.5 rounded-full bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 font-black text-xs sm:text-sm tracking-tight shadow-lg shadow-amber-500/30 flex items-center gap-1">
-                      <span>{toEnglishDigits(route.price)}</span>
-                      <span className="text-[11px] font-bold">ج.م</span>
+                      <span>{toEnglishDigits(money(route.price, lang).amount)}</span>
+                      {money(route.price, lang).unit && (
+                        <span className="text-[11px] font-bold">{money(route.price, lang).unit}</span>
+                      )}
                     </div>
                   </div>
 
@@ -1018,7 +1063,7 @@ export default function App() {
                         <span>{t.routes.calcNow}</span>
                         {isRTL ? <ArrowLeft className="w-3.5 h-3.5" /> : <ArrowRight className="w-3.5 h-3.5" />}
                       </span>
-                      <span className="text-[11px] text-slate-300 font-normal">سعر محدد ثابت</span>
+                      <span className="text-[11px] text-slate-300 font-normal">{FIXED_PRICE_LABEL[lang]}</span>
                     </div>
                   </div>
                 </div>
@@ -1170,9 +1215,9 @@ export default function App() {
                       {car.pricePerKm !== null ? (
                         <div className="text-end">
                           <span className="text-2xl font-black text-amber-500 font-['Cairo'] font-mono tabular-nums">
-                            {toEnglishDigits(fmtNum(car.pricePerKm))}
+                            {perKmText(car.pricePerKm)}
                           </span>
-                          <span className="text-xs mx-1" style={{ color: "var(--muted)" }}>{t.fleet.currencyPerKm}</span>
+                          <span className="text-xs mx-1" style={{ color: "var(--muted)" }}>{perKmUnit}</span>
                         </div>
                       ) : (
                         <span className="text-xs text-amber-600 dark:text-amber-400 font-semibold">
@@ -1313,12 +1358,20 @@ export default function App() {
               className="text-2xl sm:text-3xl font-bold mt-1 font-['Cairo']"
               style={{ color: "var(--fg-heading)" }}
             >
-              {lang === "ar" ? "استعرض الليموزين بزاوية 360°" : "Explore the Limousine in 360°"}
+              {{
+                ar: "استعرض الليموزين بزاوية 360°",
+                en: "Explore the Limousine in 360°",
+                zh: "360° 全方位欣赏豪华轿车",
+                ru: "Рассмотрите лимузин на 360°"
+              }[lang]}
             </h2>
             <p className="text-sm max-w-2xl mt-1.5" style={{ color: "var(--muted)" }}>
-              {lang === "ar"
-                ? "اسحب للدوران، غيّر لون الطلاء، وبدّل زوايا الرؤية."
-                : "Drag to rotate, change the paint colour and switch camera angles."}
+              {{
+                ar: "اسحب للدوران، غيّر لون الطلاء، وبدّل زوايا الرؤية.",
+                en: "Drag to rotate, change the paint colour and switch camera angles.",
+                zh: "拖动旋转，更换车身颜色，切换不同视角。",
+                ru: "Перетаскивайте для вращения, меняйте цвет кузова и ракурс."
+              }[lang]}
             </p>
           </div>
           <MountWhenVisible minHeight={520}>
@@ -1660,7 +1713,7 @@ export default function App() {
                         </h4>
                         <p className="text-xs mt-0.5" style={{ color: "var(--muted)" }}>
                           {activeCar.pricePerKm !== null
-                            ? `${t.booking.baseKmPrice} ${toEnglishDigits(fmtNum(activeCar.pricePerKm))} ${t.fleet.currencyPerKm}`
+                            ? `${t.booking.baseKmPrice} ${perKmText(activeCar.pricePerKm)} ${perKmUnit}`
                             : t.booking.customKmPrice}
                         </p>
                       </div>
@@ -1674,12 +1727,21 @@ export default function App() {
                           {t.booking.estimatedCostLabel}
                         </span>
                         {estimatedFare !== null ? (
-                          <div className="flex items-baseline gap-1 mt-0.5">
-                            <span className="text-2xl font-black text-amber-500 tabular-nums font-mono">
-                              {toEnglishDigits(estimatedFare)}
-                            </span>
-                            <span className="text-xs" style={{ color: "var(--muted)" }}>{t.booking.currency}</span>
-                          </div>
+                          <>
+                            <div className="flex items-baseline gap-1 mt-0.5">
+                              <span className="text-2xl font-black text-amber-500 tabular-nums font-mono">
+                                {toEnglishDigits(lang === "ar" ? String(estimatedFare) : money(estimatedFare, lang).amount)}
+                              </span>
+                              <span className="text-xs" style={{ color: "var(--muted)" }}>
+                                {lang === "ar" ? t.booking.currency : "USD"}
+                              </span>
+                            </div>
+                            {lang !== "ar" && (
+                              <span className="text-[10px] block mt-1" style={{ color: "var(--muted)" }}>
+                                {billedInEgpNote(estimatedFare, lang)}
+                              </span>
+                            )}
+                          </>
                         ) : (
                           <span className="text-xs font-medium mt-1 block" style={{ color: "var(--muted)" }}>
                             {t.booking.enterKmNotice}
@@ -2165,7 +2227,7 @@ export default function App() {
                   className="text-base font-bold mt-1 block"
                   style={{ color: "var(--fg-heading)" }}
                 >
-                  {appState.settings.address}
+                  {localizeAddress(appState.settings.address, lang)}
                 </span>
               </div>
 
