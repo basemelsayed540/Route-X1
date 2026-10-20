@@ -23,6 +23,11 @@ export default defineConfig(() => {
   return {
     base: './',
     plugins: [react(), tailwindcss(), fileProtocolFriendly()],
+    // The IIFE bundle has no import.meta.url; some libraries (three's DRACOLoader) build a URL from it
+    // at load time, which would throw and leave a blank page. Point it at the page URL instead.
+    define: {
+      'import.meta.url': 'document.baseURI',
+    },
     build: {
       rolldownOptions: {
         output: {format: 'iife' as const},

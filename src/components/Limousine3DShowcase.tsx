@@ -5,6 +5,9 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import {
   Rotate3d,
   Sparkles,
@@ -20,9 +23,11 @@ import {
 interface Limousine3DProps {
   onClose?: () => void;
   lang?: string;
+  /** Trial: load a real 3D car model (public/models/ferrari.glb) instead of the built-in shapes. */
+  realModel?: boolean;
 }
 
-export const Limousine3DShowcase: React.FC<Limousine3DProps> = ({ onClose, lang = "ar" }) => {
+export const Limousine3DShowcase: React.FC<Limousine3DProps> = ({ onClose, lang = "ar", realModel = false }) => {
   const L = (ar: string, en: string, zh: string, ru: string) =>
     lang === "ar" ? ar : lang === "zh" ? zh : lang === "ru" ? ru : en;
   const containerRef = useRef<HTMLDivElement>(null);
@@ -31,6 +36,7 @@ export const Limousine3DShowcase: React.FC<Limousine3DProps> = ({ onClose, lang 
   const [autoRotate, setAutoRotate] = useState<boolean>(true);
   const [isControlsCollapsed, setIsControlsCollapsed] = useState<boolean>(false);
   const [activeCamPreset, setActiveCamPreset] = useState<string>("frontThreeQuarter");
+  const [realLoaded, setRealLoaded] = useState<boolean>(false);
 
   // Paint Color Swatches
   const colorOptions = [
@@ -364,6 +370,85 @@ export const Limousine3DShowcase: React.FC<Limousine3DProps> = ({ onClose, lang 
       wheelMeshes.push(wheelGroup);
     });
 
+    // 6b. OPTIONAL: real 3D car model (glTF). Falls back to the built-in shapes if it fails to load.
+    let disposed = false;
+    const extraBodyMaterials: THREE.MeshPhysicalMaterial[] = [];
+    if (realModel) {
+      const draco = new DRACOLoader();
+      draco.setDecoderPath(`${import.meta.env.BASE_URL}draco/`);
+      const gltfLoader = new GLTFLoader();
+      gltfLoader.setDRACOLoader(draco);
+      gltfLoader.load(
+        `${import.meta.env.BASE_URL}models/ferrari.glb`,
+        (gltf) => {
+          if (disposed) return;
+          const model = gltf.scene;
+          const mesh = (name: string) => model.getObjectByName(name) as THREE.Mesh | undefined;
+
+          const body = mesh("body");
+          if (body) {
+            const m = new THREE.MeshPhysicalMaterial({
+              color: new THREE.Color(paintColor),
+              metalness: 1.0,
+              roughness: 0.45,
+              clearcoat: 1.0,
+              clearcoatRoughness: 0.03
+            });
+            body.material = m;
+            extraBodyMaterials.push(m);
+          }
+          const glass = mesh("glass");
+          if (glass) {
+            // Light-weight tinted glass (real "transmission" glass is too heavy for phones)
+            glass.material = new THREE.MeshStandardMaterial({
+              color: 0x10151d,
+              metalness: 0.6,
+              roughness: 0.05,
+              transparent: true,
+              opacity: 0.55
+            });
+          }
+          const detailsMat = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 1.0, roughness: 0.5 });
+          ["rim_fl", "rim_fr", "rim_rl", "rim_rr", "trim"].forEach((n) => {
+            const o = mesh(n);
+            if (o) o.material = detailsMat;
+          });
+
+          // Fit: face +X like the built-in car, ~5.2 units long, centred, sitting on the floor
+          let box = new THREE.Box3().setFromObject(model);
+          let size = box.getSize(new THREE.Vector3());
+          if (size.z > size.x) model.rotation.y = Math.PI / 2;
+          box = new THREE.Box3().setFromObject(model);
+          size = box.getSize(new THREE.Vector3());
+          model.scale.multiplyScalar(5.2 / Math.max(size.x, size.z));
+          box = new THREE.Box3().setFromObject(model);
+          const center = box.getCenter(new THREE.Vector3());
+          model.position.x -= center.x;
+          model.position.z -= center.z;
+          model.position.y -= box.min.y;
+          model.traverse((o) => {
+            if ((o as THREE.Mesh).isMesh) {
+              o.castShadow = true;
+              o.receiveShadow = true;
+            }
+          });
+
+          // Reflections so the paint looks like real metal
+          const pmrem = new THREE.PMREMGenerator(renderer);
+          scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+          scene.environmentIntensity = 0.7;
+
+          carGroup.visible = false;
+          scene.add(model);
+          setRealLoaded(true);
+        },
+        undefined,
+        (err) => {
+          console.warn("Real 3D model failed to load; using the built-in model.", err);
+        }
+      );
+    }
+
     // 7. Interactive Mouse / Touch Drag Orbit
     let isDragging = false;
     let prevMouseX = 0;
@@ -425,7 +510,7 @@ export const Limousine3DShowcase: React.FC<Limousine3DProps> = ({ onClose, lang 
 
       // Auto-rotation if enabled and not currently dragging
       if (autoRotate && !isDragging) {
-        azimuth += delta * 0.35;
+        azimuth += Math.min(delta, 0.1) * 0.35;
       }
 
       // Smooth damped camera positioning
@@ -433,7 +518,8 @@ export const Limousine3DShowcase: React.FC<Limousine3DProps> = ({ onClose, lang 
       targetCameraPos.y = Math.sin(elevation) * distance;
       targetCameraPos.z = Math.cos(azimuth) * Math.cos(elevation) * distance;
 
-      camera.position.lerp(targetCameraPos, 0.08);
+      // Frame-rate independent damping (≈0.08 per frame at 60 fps) so slow devices do not lag behind
+      camera.position.lerp(targetCameraPos, 1 - Math.exp(-delta * 5.5));
       camera.lookAt(0, 0.65, 0);
 
       // Subtle chassis suspension idle breathing
@@ -447,6 +533,7 @@ export const Limousine3DShowcase: React.FC<Limousine3DProps> = ({ onClose, lang 
     // Store references on container for external React state updates
     (container as any).__threeRefs = {
       carBodyMaterial,
+      extraBodyMaterials,
       headlightGlassMat,
       taillightMat,
       camera,
@@ -462,6 +549,7 @@ export const Limousine3DShowcase: React.FC<Limousine3DProps> = ({ onClose, lang 
 
     // Cleanup
     return () => {
+      disposed = true;
       cancelAnimationFrame(animationFrameId);
       window.removeEventListener("resize", handleResize);
       domElement.removeEventListener("pointerdown", onPointerDown);
@@ -483,6 +571,7 @@ export const Limousine3DShowcase: React.FC<Limousine3DProps> = ({ onClose, lang 
     if (refs?.carBodyMaterial) {
       refs.carBodyMaterial.color.set(paintColor);
     }
+    refs?.extraBodyMaterials?.forEach((m: THREE.MeshPhysicalMaterial) => m.color.set(paintColor));
   }, [paintColor]);
 
   // Update headlights emissive state
@@ -549,6 +638,17 @@ export const Limousine3DShowcase: React.FC<Limousine3DProps> = ({ onClose, lang 
           )}
         </div>
       </div>
+
+      {realLoaded && (
+        <a
+          href="https://sketchfab.com/models/57bf6cc56931426e87494f554df1dab6"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="absolute top-16 end-4 sm:end-6 text-[10px] text-slate-400 hover:text-slate-200 z-10"
+        >
+          Model: Ferrari 458 Italia by vicent091036 (Sketchfab) · trial
+        </a>
+      )}
 
       {/* Collapsible Bottom Studio Control Dock (Zero Viewport Occlusion) */}
       <div
@@ -630,8 +730,8 @@ export const Limousine3DShowcase: React.FC<Limousine3DProps> = ({ onClose, lang 
               </button>
             </div>
 
-            {/* LED Headlights Toggle */}
-            <div className="flex items-center gap-2">
+            {/* LED Headlights Toggle (built-in model only) */}
+            <div className={`flex items-center gap-2 ${realLoaded ? "hidden" : ""}`}>
               <button
                 type="button"
                 onClick={() => setLightsOn(!lightsOn)}

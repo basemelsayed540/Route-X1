@@ -1375,7 +1375,13 @@ export default function App() {
             </p>
           </div>
           <MountWhenVisible minHeight={520}>
-            <Limousine3DShowcase lang={lang} />
+            <Limousine3DShowcase
+              lang={lang}
+              realModel={
+                typeof window !== "undefined" &&
+                new URLSearchParams(window.location.search).get("model") === "real"
+              }
+            />
           </MountWhenVisible>
         </div>
       </section>
