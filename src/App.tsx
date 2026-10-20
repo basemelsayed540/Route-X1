@@ -939,6 +939,45 @@ export default function App() {
         </div>
       </section>
 
+      {/* 2b. INTERACTIVE 3D LIMOUSINE STUDIO (right after the hero, above the cashback offer) */}
+      <section id="studio-3d" className="relative z-10 py-12 sm:py-16 px-4 sm:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-start mb-8">
+            <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 tracking-wider uppercase">
+              3D STUDIO
+            </span>
+            <h2
+              className="text-2xl sm:text-3xl font-bold mt-1 font-['Cairo']"
+              style={{ color: "var(--fg-heading)" }}
+            >
+              {{
+                ar: "استعرض الليموزين بزاوية 360°",
+                en: "Explore the Limousine in 360°",
+                zh: "360° 全方位欣赏豪华轿车",
+                ru: "Рассмотрите лимузин на 360°"
+              }[lang]}
+            </h2>
+            <p className="text-sm max-w-2xl mt-1.5" style={{ color: "var(--muted)" }}>
+              {{
+                ar: "اسحب للدوران، غيّر لون الطلاء، وبدّل زوايا الرؤية.",
+                en: "Drag to rotate, change the paint colour and switch camera angles.",
+                zh: "拖动旋转，更换车身颜色，切换不同视角。",
+                ru: "Перетаскивайте для вращения, меняйте цвет кузова и ракурс."
+              }[lang]}
+            </p>
+          </div>
+          <MountWhenVisible minHeight={520}>
+            <Limousine3DShowcase
+              lang={lang}
+              realModel={
+                typeof window !== "undefined" &&
+                new URLSearchParams(window.location.search).get("model") === "real"
+              }
+            />
+          </MountWhenVisible>
+        </div>
+      </section>
+
       {/* 3. CASHBACK PROMOTIONAL BANNER */}
       <section className="relative z-10 px-4 sm:px-8 py-4">
         <div className="max-w-7xl mx-auto">
@@ -1344,45 +1383,6 @@ export default function App() {
               </div>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* 8b. INTERACTIVE 3D LIMOUSINE STUDIO */}
-      <section id="studio-3d" className="relative z-10 py-12 sm:py-16 px-4 sm:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-start mb-8">
-            <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 tracking-wider uppercase">
-              3D STUDIO
-            </span>
-            <h2
-              className="text-2xl sm:text-3xl font-bold mt-1 font-['Cairo']"
-              style={{ color: "var(--fg-heading)" }}
-            >
-              {{
-                ar: "استعرض الليموزين بزاوية 360°",
-                en: "Explore the Limousine in 360°",
-                zh: "360° 全方位欣赏豪华轿车",
-                ru: "Рассмотрите лимузин на 360°"
-              }[lang]}
-            </h2>
-            <p className="text-sm max-w-2xl mt-1.5" style={{ color: "var(--muted)" }}>
-              {{
-                ar: "اسحب للدوران، غيّر لون الطلاء، وبدّل زوايا الرؤية.",
-                en: "Drag to rotate, change the paint colour and switch camera angles.",
-                zh: "拖动旋转，更换车身颜色，切换不同视角。",
-                ru: "Перетаскивайте для вращения, меняйте цвет кузова и ракурс."
-              }[lang]}
-            </p>
-          </div>
-          <MountWhenVisible minHeight={520}>
-            <Limousine3DShowcase
-              lang={lang}
-              realModel={
-                typeof window !== "undefined" &&
-                new URLSearchParams(window.location.search).get("model") === "real"
-              }
-            />
-          </MountWhenVisible>
         </div>
       </section>
 
