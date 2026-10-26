@@ -23,7 +23,7 @@ import {
 interface Limousine3DProps {
   onClose?: () => void;
   lang?: string;
-  /** Trial: load a real 3D car model (public/models/ferrari.glb) instead of the built-in shapes. */
+  /** Load the real 3D car model (public/models/ferrari.glb). Falls back to the built-in shapes if it cannot load. */
   realModel?: boolean;
 }
 
@@ -646,7 +646,7 @@ export const Limousine3DShowcase: React.FC<Limousine3DProps> = ({ onClose, lang 
           rel="noopener noreferrer"
           className="absolute top-16 end-4 sm:end-6 text-[10px] text-slate-400 hover:text-slate-200 z-10"
         >
-          Model: Ferrari 458 Italia by vicent091036 (Sketchfab) · trial
+          Model: Ferrari 458 Italia by vicent091036 (Sketchfab)
         </a>
       )}
 

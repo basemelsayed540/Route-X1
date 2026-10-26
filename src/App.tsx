@@ -969,9 +969,10 @@ export default function App() {
           <MountWhenVisible minHeight={520}>
             <Limousine3DShowcase
               lang={lang}
+              // Real 3D car by default; open the page with ?model=basic to use the built-in simple shapes
               realModel={
-                typeof window !== "undefined" &&
-                new URLSearchParams(window.location.search).get("model") === "real"
+                typeof window === "undefined" ||
+                new URLSearchParams(window.location.search).get("model") !== "basic"
               }
             />
           </MountWhenVisible>
