@@ -37,6 +37,7 @@ export const Limousine3DShowcase: React.FC<Limousine3DProps> = ({ onClose, lang 
   const [isControlsCollapsed, setIsControlsCollapsed] = useState<boolean>(false);
   const [activeCamPreset, setActiveCamPreset] = useState<string>("frontThreeQuarter");
   const [realLoaded, setRealLoaded] = useState<boolean>(false);
+  const [realFailed, setRealFailed] = useState<boolean>(false);
 
   // Paint Color Swatches
   const colorOptions = [
@@ -65,23 +66,24 @@ export const Limousine3DShowcase: React.FC<Limousine3DProps> = ({ onClose, lang 
 
     // 1. Scene & Background
     const scene = new THREE.Scene();
-    // Showroom backdrop: a soft grey-blue spotlight behind the car so a black car stays clearly visible
+    // Photo-studio backdrop: a bright, soft grey gradient (like a real car photo studio) so dark paint
+    // stays clearly visible and the floor fades smoothly into the background.
     const bgCanvas = document.createElement("canvas");
-    bgCanvas.width = 512;
+    bgCanvas.width = 8;
     bgCanvas.height = 512;
     const bgCtx = bgCanvas.getContext("2d");
     if (bgCtx) {
-      const g = bgCtx.createRadialGradient(256, 230, 20, 256, 256, 400);
-      g.addColorStop(0, "#9aa8bf");
-      g.addColorStop(0.55, "#5d6b84");
-      g.addColorStop(1, "#38445a");
+      const g = bgCtx.createLinearGradient(0, 0, 0, 512);
+      g.addColorStop(0, "#f7f9fc");
+      g.addColorStop(0.5, "#e6ebf2");
+      g.addColorStop(1, "#d3dae4");
       bgCtx.fillStyle = g;
-      bgCtx.fillRect(0, 0, 512, 512);
+      bgCtx.fillRect(0, 0, 8, 512);
     }
     const bgTexture = new THREE.CanvasTexture(bgCanvas);
     bgTexture.colorSpace = THREE.SRGBColorSpace;
     scene.background = bgTexture;
-    scene.fog = new THREE.FogExp2(0x4a576e, 0.02);
+    scene.fog = new THREE.FogExp2(0xe2e8f0, 0.03);
 
     // 2. Camera
     const camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 100);
@@ -109,7 +111,7 @@ export const Limousine3DShowcase: React.FC<Limousine3DProps> = ({ onClose, lang 
 
     // 4. Lighting Rig
     // Warm Key Light
-    const keyLight = new THREE.DirectionalLight(0xfff3db, 2.8);
+    const keyLight = new THREE.DirectionalLight(0xfff6e8, 2.4);
     keyLight.position.set(8, 12, 6);
     keyLight.castShadow = true;
     keyLight.shadow.mapSize.width = 1024;
@@ -124,20 +126,20 @@ export const Limousine3DShowcase: React.FC<Limousine3DProps> = ({ onClose, lang 
     scene.add(keyLight);
 
     // Cool Fill Light
-    const fillLight = new THREE.DirectionalLight(0x7ea8db, 1.2);
+    const fillLight = new THREE.DirectionalLight(0xdbe7ff, 1.1);
     fillLight.position.set(-8, 6, -6);
     scene.add(fillLight);
 
     // Ambient Hemisphere
-    const hemiLight = new THREE.HemisphereLight(0x283b5b, 0x05070a, 0.9);
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0xb4bcc9, 1.1);
     scene.add(hemiLight);
 
     // Studio Rim Lights for silhouette gloss
-    const rimLight1 = new THREE.PointLight(0xd4af37, 2.5, 15);
+    const rimLight1 = new THREE.PointLight(0xfff0cf, 1.2, 15);
     rimLight1.position.set(0, 2.5, -7);
     scene.add(rimLight1);
 
-    const rimLight2 = new THREE.PointLight(0x5599ff, 1.8, 15);
+    const rimLight2 = new THREE.PointLight(0xdbe7ff, 0.9, 15);
     rimLight2.position.set(0, 2.5, 7);
     scene.add(rimLight2);
 
@@ -160,7 +162,7 @@ export const Limousine3DShowcase: React.FC<Limousine3DProps> = ({ onClose, lang 
     const shadowMat = new THREE.MeshBasicMaterial({
       map: shadowTexture,
       transparent: true,
-      opacity: 0.85,
+      opacity: 0.6,
       depthWrite: false
     });
     const contactShadow = new THREE.Mesh(shadowGeo, shadowMat);
@@ -169,11 +171,11 @@ export const Limousine3DShowcase: React.FC<Limousine3DProps> = ({ onClose, lang 
     scene.add(contactShadow);
 
     // Circular reflective pedestal
-    const pedestalGeo = new THREE.CylinderGeometry(6, 6.2, 0.15, 64);
+    const pedestalGeo = new THREE.CylinderGeometry(70, 70, 0.15, 96);
     const pedestalMat = new THREE.MeshStandardMaterial({
-      color: 0x4b566b,
-      roughness: 0.35,
-      metalness: 0.55
+      color: 0xdfe5ed,
+      roughness: 0.55,
+      metalness: 0.05
     });
     const pedestal = new THREE.Mesh(pedestalGeo, pedestalMat);
     pedestal.position.y = -0.08;
@@ -189,7 +191,7 @@ export const Limousine3DShowcase: React.FC<Limousine3DProps> = ({ onClose, lang 
     const ring = new THREE.Mesh(ringGeo, ringMat);
     ring.rotation.x = -Math.PI / 2;
     ring.position.y = -0.07;
-    scene.add(ring);
+    // (decorative gold ring removed: the floor now extends into the backdrop like a photo studio)
 
     // 6. BUILD PROCEDURAL LUXURY LIMOUSINE (Composite 3-12 Part THREE.Group)
     const carGroup = new THREE.Group();
@@ -389,6 +391,9 @@ export const Limousine3DShowcase: React.FC<Limousine3DProps> = ({ onClose, lang 
     let disposed = false;
     const extraBodyMaterials: THREE.MeshPhysicalMaterial[] = [];
     if (realModel) {
+      // Do not flash the built-in simple car while the real model downloads; it is shown only if loading fails
+      carGroup.visible = false;
+      contactShadow.visible = false;
       const draco = new DRACOLoader();
       draco.setDecoderPath(`${import.meta.env.BASE_URL}draco/`);
       const gltfLoader = new GLTFLoader();
@@ -454,12 +459,17 @@ export const Limousine3DShowcase: React.FC<Limousine3DProps> = ({ onClose, lang 
           scene.environmentIntensity = 0.9;
 
           carGroup.visible = false;
+          contactShadow.visible = true;
           scene.add(model);
           setRealLoaded(true);
         },
         undefined,
         (err) => {
           console.warn("Real 3D model failed to load; using the built-in model.", err);
+          if (disposed) return;
+          carGroup.visible = true;
+          contactShadow.visible = true;
+          setRealFailed(true);
         }
       );
     }
@@ -631,8 +641,8 @@ export const Limousine3DShowcase: React.FC<Limousine3DProps> = ({ onClose, lang 
           <button
             type="button"
             onClick={() => setAutoRotate(!autoRotate)}
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold glass-btn-ghost flex items-center gap-1.5 cursor-pointer shadow-md ${
-              autoRotate ? "text-amber-400 border-amber-400/40" : "text-slate-300"
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold glass-btn-dark flex items-center gap-1.5 cursor-pointer shadow-md ${
+              autoRotate ? "text-amber-400 border-amber-400/40" : "text-slate-100"
             }`}
           >
             <Rotate3d className="w-3.5 h-3.5" />
@@ -646,7 +656,7 @@ export const Limousine3DShowcase: React.FC<Limousine3DProps> = ({ onClose, lang 
             <button
               type="button"
               onClick={onClose}
-              className="w-8 h-8 rounded-full glass-btn-ghost flex items-center justify-center text-slate-300 hover:text-white cursor-pointer"
+              className="w-8 h-8 rounded-full glass-btn-dark flex items-center justify-center text-slate-100 hover:text-white cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -654,12 +664,21 @@ export const Limousine3DShowcase: React.FC<Limousine3DProps> = ({ onClose, lang 
         </div>
       </div>
 
+      {realModel && !realLoaded && !realFailed && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 z-10 pointer-events-none">
+          <div className="w-9 h-9 rounded-full border-2 border-slate-400/40 border-t-amber-500 animate-spin" />
+          <span className="text-xs font-semibold px-3 py-1 rounded-full bg-slate-900/60 text-slate-100">
+            {L("جاري تحميل السيارة ثلاثية الأبعاد…", "Loading the 3D car…", "正在加载 3D 车辆…", "Загрузка 3D-модели…")}
+          </span>
+        </div>
+      )}
+
       {realLoaded && (
         <a
           href="https://sketchfab.com/models/57bf6cc56931426e87494f554df1dab6"
           target="_blank"
           rel="noopener noreferrer"
-          className="absolute top-16 end-4 sm:end-6 text-[10px] text-slate-200/80 hover:text-white z-10"
+          className="absolute top-16 end-4 sm:end-6 text-[10px] px-2 py-0.5 rounded-full bg-slate-900/55 text-slate-100 hover:text-white z-10"
         >
           Model: Ferrari 458 Italia by vicent091036 (Sketchfab)
         </a>
@@ -746,7 +765,7 @@ export const Limousine3DShowcase: React.FC<Limousine3DProps> = ({ onClose, lang 
             </div>
 
             {/* LED Headlights Toggle (built-in model only) */}
-            <div className={`flex items-center gap-2 ${realLoaded ? "hidden" : ""}`}>
+            <div className={`flex items-center gap-2 ${realModel && !realFailed ? "hidden" : ""}`}>
               <button
                 type="button"
                 onClick={() => setLightsOn(!lightsOn)}

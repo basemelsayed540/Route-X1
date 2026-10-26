@@ -217,3 +217,18 @@
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(212, 175, 55, 0.5);
 }
+
+/* Dark translucent button for controls that sit on top of the bright 3D studio */
+.glass-btn-dark {
+  background: rgba(15, 20, 32, 0.68);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  transition: all 0.2s ease;
+}
+
+.glass-btn-dark:hover {
+  background: rgba(15, 20, 32, 0.82);
+  border-color: rgba(212, 175, 55, 0.5);
+}
