@@ -1,11 +1,11 @@
 // Image assets for Route X Limousine
 
-import heroLuxury from "@/src/assets/images/limousine_hero_luxury_1792103771410.jpg";
-import interiorLuxury from "@/src/assets/images/limousine_interior_vip_1792103785078.jpg";
-import cairoHighway from "@/src/assets/images/limousine_cairo_highway_1792152888252.jpg";
-import cairoAirport from "@/src/assets/images/limousine_cairo_airport_1792152902953.jpg";
-import sphinxAirport from "@/src/assets/images/limousine_sphinx_airport_1792152916735.jpg";
-import borgElArab from "@/src/assets/images/limousine_borg_elarab_1792152931612.jpg";
+import heroLuxury from "@/src/assets/images/hero-luxury.webp";
+import interiorLuxury from "@/src/assets/images/cabin-interior.webp";
+import cairoHighway from "@/src/assets/images/cairo-highway.webp";
+import cairoAirport from "@/src/assets/images/cairo-airport.webp";
+import sphinxAirport from "@/src/assets/images/sphinx-airport.webp";
+import borgElArab from "@/src/assets/images/borg-el-arab.webp";
 
 // NOTE: `logo` is a placeholder monogram. The original embedded JPEG was corrupted
 // (invalid base64). Replace with your real logo file, e.g. import logo from "@/src/assets/images/logo.png".
