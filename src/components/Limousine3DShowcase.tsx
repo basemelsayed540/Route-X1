@@ -65,8 +65,23 @@ export const Limousine3DShowcase: React.FC<Limousine3DProps> = ({ onClose, lang 
 
     // 1. Scene & Background
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x06080d);
-    scene.fog = new THREE.FogExp2(0x06080d, 0.035);
+    // Showroom backdrop: a soft grey-blue spotlight behind the car so a black car stays clearly visible
+    const bgCanvas = document.createElement("canvas");
+    bgCanvas.width = 512;
+    bgCanvas.height = 512;
+    const bgCtx = bgCanvas.getContext("2d");
+    if (bgCtx) {
+      const g = bgCtx.createRadialGradient(256, 230, 20, 256, 256, 400);
+      g.addColorStop(0, "#9aa8bf");
+      g.addColorStop(0.55, "#5d6b84");
+      g.addColorStop(1, "#38445a");
+      bgCtx.fillStyle = g;
+      bgCtx.fillRect(0, 0, 512, 512);
+    }
+    const bgTexture = new THREE.CanvasTexture(bgCanvas);
+    bgTexture.colorSpace = THREE.SRGBColorSpace;
+    scene.background = bgTexture;
+    scene.fog = new THREE.FogExp2(0x4a576e, 0.02);
 
     // 2. Camera
     const camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 100);
@@ -156,9 +171,9 @@ export const Limousine3DShowcase: React.FC<Limousine3DProps> = ({ onClose, lang 
     // Circular reflective pedestal
     const pedestalGeo = new THREE.CylinderGeometry(6, 6.2, 0.15, 64);
     const pedestalMat = new THREE.MeshStandardMaterial({
-      color: 0x0e131d,
-      roughness: 0.25,
-      metalness: 0.85
+      color: 0x4b566b,
+      roughness: 0.35,
+      metalness: 0.55
     });
     const pedestal = new THREE.Mesh(pedestalGeo, pedestalMat);
     pedestal.position.y = -0.08;
@@ -436,7 +451,7 @@ export const Limousine3DShowcase: React.FC<Limousine3DProps> = ({ onClose, lang 
           // Reflections so the paint looks like real metal
           const pmrem = new THREE.PMREMGenerator(renderer);
           scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-          scene.environmentIntensity = 0.7;
+          scene.environmentIntensity = 0.9;
 
           carGroup.visible = false;
           scene.add(model);
@@ -644,7 +659,7 @@ export const Limousine3DShowcase: React.FC<Limousine3DProps> = ({ onClose, lang 
           href="https://sketchfab.com/models/57bf6cc56931426e87494f554df1dab6"
           target="_blank"
           rel="noopener noreferrer"
-          className="absolute top-16 end-4 sm:end-6 text-[10px] text-slate-400 hover:text-slate-200 z-10"
+          className="absolute top-16 end-4 sm:end-6 text-[10px] text-slate-200/80 hover:text-white z-10"
         >
           Model: Ferrari 458 Italia by vicent091036 (Sketchfab)
         </a>
